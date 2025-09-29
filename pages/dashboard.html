@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div id="dashboard">
+    <div class="todo-container">
+        <div class="todo-header">
+            <h2>My Todos</h2>
+            <button class="btn btn-primary" onclick="todoManager.showAddTodoModal()" 
+                    style="background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 500;">
+                Add New Todo
+            </button>
+        </div>
+
+        <div class="todo-stats">
+            <div class="stat-card">
+                <h3 id="total-todos">0</h3>
+                <p>Total Todos</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="completed-todos">0</h3>
+                <p>Completed</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="pending-todos">0</h3>
+                <p>Pending</p>
+            </div>
+        </div>
+
+        <div class="todo-controls">
+            <div class="search-box">
+                <input type="text" id="search-input" class="form-control" placeholder="Search todos..." 
+                       oninput="todoManager.handleSearch()">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all" onclick="todoManager.filterTodos('all', this)">
+                    All
+                </button>
+                <button class="filter-btn" data-filter="pending" onclick="todoManager.filterTodos('pending', this)">
+                    Pending
+                </button>
+                <button class="filter-btn" data-filter="completed" onclick="todoManager.filterTodos('completed', this)">
+                    Completed
+                </button>
+                <button class="btn btn-primary" onclick="todoManager.showAddTodoModal()" 
+                        style="background: #28a745; color: white; padding: 8px 16px; border: none; border-radius: 20px; cursor: pointer; margin-left: 10px;">
+                    + Add Todo
+                </button>
+            </div>
+        </div>
+
+        <div id="todo-list" class="todo-list">
+            <div id="loading-todos" class="text-center" style="padding: 40px;">
+                <div class="loading" style="margin: 0 auto;"></div>
+                <p style="margin-top: 10px;">Loading todos...</p>
+            </div>
+        </div>
+
+        <div id="empty-state" class="text-center hidden" style="padding: 60px 20px;">
+            <h3 style="color: #666; margin-bottom: 15px;">No todos found</h3>
+            <p style="color: #999; margin-bottom: 25px;">Get started by creating your first todo!</p>
+            <button class="btn btn-primary" onclick="todoManager.showAddTodoModal()">
+                Create Your First Todo
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="todo-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modal-title">Add New Todo</h3>
+            <button class="close" onclick="todoManager.closeTodoModal()">&times;</button>
+        </div>
+        <form id="todo-form" onsubmit="todoManager.handleTodoSubmit(event)">
+            <div class="form-group">
+                <label for="todo-title">Title *</label>
+                <input type="text" id="todo-title" name="title" class="form-control" required maxlength="200">
+            </div>
+            <div class="form-group">
+                <label for="todo-description">Description</label>
+                <textarea id="todo-description" name="description" class="form-control" rows="4" maxlength="1000"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="todo-priority">Priority</label>
+                <select id="todo-priority" name="priority" class="form-control">
+                    <option value="LOW">Low</option>
+                    <option value="MEDIUM" selected>Medium</option>
+                    <option value="HIGH">High</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="todo-due-date">Due Date</label>
+                <input type="datetime-local" id="todo-due-date" name="dueDate" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="flex items-center gap-10">
+                    <input type="checkbox" id="todo-completed" name="completed">
+                    <span>Mark as completed</span>
+                </label>
+            </div>
+            <div class="flex gap-10 justify-between mt-20">
+                <button type="button" class="btn btn-secondary" onclick="todoManager.closeTodoModal()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <span id="submit-btn-text">Add Todo</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="delete-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirm Delete</h3>
+            <button class="close" onclick="todoManager.closeDeleteModal()">&times;</button>
+        </div>
+        <p style="margin-bottom: 25px;">Are you sure you want to delete this todo? This action cannot be undone.</p>
+        <div class="flex gap-10 justify-between">
+            <button class="btn btn-secondary" onclick="todoManager.closeDeleteModal()">
+                Cancel
+            </button>
+            <button class="btn btn-danger" onclick="todoManager.confirmDelete()">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+    
+</body>
+</html>
