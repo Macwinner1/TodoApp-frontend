@@ -337,7 +337,6 @@ nav {
     font-size: 14px;
 }
 
-/* Modal Styles */
 .modal {
     display: none;
     position: fixed;
@@ -396,7 +395,6 @@ nav {
     color: #000;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
     .container {
         padding: 15px;
@@ -431,7 +429,6 @@ nav {
     }
 }
 
-/* Loading Spinner */
 .loading {
     display: inline-block;
     width: 20px;
@@ -446,7 +443,6 @@ nav {
     to { transform: rotate(360deg); }
 }
 
-/* Utility Classes */
 .text-center {
     text-align: center;
 }
