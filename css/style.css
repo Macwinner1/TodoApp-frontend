@@ -1,4 +1,4 @@
-/* Reset and Base Styles */
+
 * {
     margin: 0;
     padding: 0;
@@ -18,7 +18,6 @@ body {
     padding: 20px;
 }
 
-/* Header Styles */
 header {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
@@ -49,7 +48,6 @@ nav {
     font-weight: 500;
 }
 
-/* Button Styles */
 .btn {
     padding: 12px 24px;
     border: none;
@@ -110,7 +108,6 @@ nav {
     background: #e0a800;
 }
 
-/* Form Styles */
 .form-container {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -164,7 +161,6 @@ nav {
     margin-top: 5px;
 }
 
-/* Todo Styles */
 .todo-container {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
@@ -244,7 +240,7 @@ nav {
     color: white;
 }
 
-/* Todo List */
+
 .todo-list {
     display: grid;
     gap: 15px;
