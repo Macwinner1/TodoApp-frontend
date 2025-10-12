@@ -1,155 +1,254 @@
-const API_BASE = 'http://localhost:8080/api/v1';
-const DEFAULT_HEADERS = {
-  'Content-Type': 'application/json',
-};
 
-// Helper to parse response
-async function handleResponse(response) {
-  const contentType = response.headers.get('content-type');
-  let data;
+const BASE_URL = 'http://localhost:8080/api';
 
-  if (contentType && contentType.includes('application/json')) {
-    data = await response.json();
-  } else {
-    data = await response.text();
-  }
 
-  if (!response.ok) {
-    const errorMessage = typeof data === 'object' ? data.message || data.error : data;
-    const error = new Error(errorMessage || 'Request failed');
-    error.status = response.status;
-    error.data = data;
-    error.response = response;
+async function checkIfStillLoggedIn() {
+  try {
+    const response = await fetch('http://localhost:8080/api/me', {
+      method: 'GET',
+      credentials: 'include', 
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(response.status === 401 ? 'Not logged in' : 'Request failed');
+    }
+
+    const json = await response.json();
+    const match = json.message.match(/Logged in as userId: (\S+), username: (\S+)/);
+    if (!match) {
+      throw new Error('Invalid user data');
+    }
+    return { userId: match[1], username: match[2] };
+  } catch (error) {
     throw error;
   }
-
-  return data;
 }
 
-// --- API Functions ---
+async function registerUser(userData) {
+  try {
+    const response = await fetch('http://localhost:8080/api/register', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData), 
+    });
 
-export async function apiRegister(userData) {
-  const response = await fetch(`${API_BASE}/register`, {
-    method: 'POST',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-    body: JSON.stringify(userData),
-  });
-  return handleResponse(response);
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Registration failed');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiLogin(credentials) {
-  const response = await fetch(`${API_BASE}/login`, {
-    method: 'POST',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-    body: JSON.stringify(credentials),
-  });
-  return handleResponse(response);
+async function loginUser(credentials) {
+  try {
+    const response = await fetch('http://localhost:8080/api/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Login failed');
+    }
+
+    return await checkIfStillLoggedIn();
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiLogout() {
-  const response = await fetch(`${API_BASE}/logout`, {
-    method: 'POST',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-  });
-  return handleResponse(response);
+async function logoutUser() {
+  try {
+    const response = await fetch(`${BASE_URL}/logout`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Logout failed');
+    }
+
+    return await response.json(); 
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiGetCurrentUser() {
-  const response = await fetch(`${API_BASE}/me`, {
-    method: 'GET',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-  });
-  return handleResponse(response);
+async function getTodos(filters = {}) {
+  try {
+    const queryParams = new URLSearchParams();
+    if (filters.completed !== undefined) {
+      queryParams.append('completed', filters.completed);
+    }
+    if (filters.search) {
+      queryParams.append('searchTerm', filters.search);
+    }
+    const queryString = queryParams.toString();
+    const url = queryString ? `${BASE_URL}/search?${queryString}` : `${BASE_URL}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to fetch todos');
+    }
+
+    const data = await response.json();
+    return data.data;
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiGetTodos(filters = {}) {
-  const queryParams = new URLSearchParams();
-  if (filters.search) queryParams.append('searchTerm', filters.search);
-  if (filters.completed !== undefined) queryParams.append('completed', filters.completed);
+async function getTodo(id) {
+  try {
+    const response = await fetch(`${BASE_URL}/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
 
-  const queryString = queryParams.toString();
-  const url = queryString ? `${API_BASE}/search?${queryString}` : `${API_BASE}/`;
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to fetch todo');
+    }
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-  });
-  const data = await handleResponse(response);
-  return data.data || data;
+    const data = await response.json();
+    return data.data; 
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiGetTodo(id) {
-  const response = await fetch(`${API_BASE}/${id}`, {
-    method: 'GET',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-  });
-  const data = await handleResponse(response);
-  return data.data || data;
+async function createTodo(todoData) {
+  try {
+    const response = await fetch(`${BASE_URL}/create`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(todoData),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to create todo');
+    }
+
+    const data = await response.json();
+    return data.data; 
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiCreateTodo(todoData) {
-  const response = await fetch(`${API_BASE}/todo/create`, {
-    method: 'POST',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-    body: JSON.stringify(todoData),
-  });
-  const data = await handleResponse(response);
-  return data.data || data;
+async function updateTodo(id, todoData) {
+  try {
+    const response = await fetch(`${BASE_URL}/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(todoData),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to update todo');
+    }
+
+    const data = await response.json();
+    return data.data; 
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiUpdateTodo(id, todoData) {
-  const response = await fetch(`${API_BASE}/${id}`, {
-    method: 'PUT',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-    body: JSON.stringify(todoData),
-  });
-  const data = await handleResponse(response);
-  return data.data || data;
+async function toggleComplete(id, completed) {
+  try {
+    const endpoint = completed ? `${BASE_URL}/${id}/complete` : `${BASE_URL}/${id}/incomplete`;
+    const response = await fetch(endpoint, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to toggle completion');
+    }
+
+    const data = await response.json();
+    return data.data; 
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiDeleteTodo(id) {
-  const response = await fetch(`${API_BASE}/${id}`, {
-    method: 'DELETE',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-  });
-  return handleResponse(response);
+
+async function deleteTodo(id) {
+  try {
+   
+    const response = await fetch(`${BASE_URL}/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.message || 'Failed to delete todo');
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw error;
+  }
 }
 
-export async function apiMarkComplete(id) {
-  const response = await fetch(`${API_BASE}/${id}/complete`, {
-    method: 'PATCH',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-  });
-  const data = await handleResponse(response);
-  return data.data || data;
-}
 
-export async function apiMarkIncomplete(id) {
-  const response = await fetch(`${API_BASE}/${id}/incomplete`, {
-    method: 'PATCH',
-    headers: DEFAULT_HEADERS,
-    credentials: 'include',
-  });
-  const data = await handleResponse(response);
-  return data.data || data;
-}
-
-export async function apiGetTodoStats() {
-  const todos = await apiGetTodos();
-  const todoArray = Array.isArray(todos) ? todos : [];
-  return {
-    total: todoArray.length,
-    completed: todoArray.filter(t => t.completed).length,
-    pending: todoArray.filter(t => !t.completed).length,
-  };
+async function getTodoStats() {
+  try {
+    const todos = await getTodos();
+    const total = todos.length;
+    const completed = todos.filter((todo) => todo.completed).length;
+    const pending = total - completed;
+    const highPriority = todos.filter((todo) => todo.priority === 'HIGH').length;
+    return { total, completed, pending, highPriority };
+  } catch (error) {
+    throw error;
+  }
 }
