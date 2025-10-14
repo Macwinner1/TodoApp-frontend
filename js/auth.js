@@ -34,8 +34,8 @@ class AuthManager {
     async register(userData) {
         try {
             const response = await api.register(userData);
-            return await this.login({
-                email: userData.email,
+            return await this.loginUser({
+                username: userData.username,
                 password: userData.password
             });
         } catch (error) {
@@ -204,7 +204,7 @@ function showMessage(message, type = 'info') {
         if (messageEl.parentNode) {
             messageEl.parentNode.removeChild(messageEl);
         }
-    }, 5000);
+    }, 50000);
 }
 document.addEventListener('DOMContentLoaded', () => {
     const loginForm = document.getElementById('login-form');
