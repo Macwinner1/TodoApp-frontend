@@ -1,254 +1,142 @@
-
-const BASE_URL = 'http://localhost:8080/api';
-
-
-async function checkIfStillLoggedIn() {
-  try {
-    const response = await fetch('http://localhost:8080/api/me', {
-      method: 'GET',
-      credentials: 'include', 
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(response.status === 401 ? 'Not logged in' : 'Request failed');
+// API Service for backend communication
+class APIService {
+    constructor() {
+        this.baseURL = 'http://localhost:8080/api';
+        this.defaultHeaders = {
+            'Content-Type': 'application/json',
+        };
     }
 
-    const json = await response.json();
-    const match = json.message.match(/Logged in as userId: (\S+), username: (\S+)/);
-    if (!match) {
-      throw new Error('Invalid user data');
+    async makeRequest(url, options = {}) {
+      const fullUrl = `${this.baseURL}${url}`;
+
+      // Extended timeout: 60 minutes (3600000 ms)
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 3600000);
+
+      const config = {
+          credentials: 'include', // Include cookies for session handling
+          signal: controller.signal,
+          ...options,
+          headers: {
+              ...this.defaultHeaders,
+              ...(options.headers || {}),
+          },
+      };
+
+      let response;
+      let data;
+
+      try {
+          response = await fetch(fullUrl, config);
+
+          const contentType = response.headers.get('content-type');
+
+          if (contentType && contentType.includes('application/json')) {
+              data = await response.json();
+          } else {
+              data = await response.text();
+          }
+
+          if (!response.ok) {
+              const errorMessage = (typeof data === 'object' && data !== null)
+                  ? data.message || data.error
+                  : String(data);
+
+              const error = new Error(errorMessage || 'Request failed');
+              error.status = response.status;
+              error.data = data;
+              throw error;
+          }
+
+          return data;
+      } catch (error) {
+          if (error.name === 'AbortError') {
+              throw new Error('Request timed out. Please try again.');
+          }
+
+          if (error.name === 'TypeError' && error.message.includes('fetch')) {
+              throw new Error('Unable to connect to server. Please check if the backend is running.');
+          }
+
+          throw error;
+      } finally {
+          // clearTimeout(timeout);
+      }
     }
-    return { userId: match[1], username: match[2] };
-  } catch (error) {
-    throw error;
-  }
+
+
+    // Authentication API methods
+    async register(userData) {
+        return this.makeRequest('/register', {
+            method: 'POST',
+            body: JSON.stringify(userData),
+        });
+    }
+
+    async login(credentials) {
+        return this.makeRequest('/login', {
+            method: 'POST',
+            body: JSON.stringify(credentials),
+        });
+    }
+
+    async logout() {
+        return this.makeRequest('/logout', {
+            method: 'POST',
+        });
+    }
+
+    async getCurrentUser() {
+        return this.makeRequest('/me');
+    }
+
+    // Todo API methods
+    async getTodos(filters = {}) {
+        const queryParams = new URLSearchParams();
+        
+        if (filters.completed !== undefined) {
+            queryParams.append('completed', filters.completed);
+        }
+        
+        if (filters.search) {
+            queryParams.append('search', filters.search);
+        }
+
+        const queryString = queryParams.toString();
+        const url = queryString ? `/search?${queryString}` : '/search';
+        
+        return this.makeRequest(url);
+    }
+
+    async getTodo(id) {
+        return this.makeRequest(`/${id}`);
+    }
+
+    async createTodo(todoData) {
+        return this.makeRequest('/create', {
+            method: 'POST',
+            body: JSON.stringify(todoData),
+        });
+    }
+
+    async updateTodo(id, todoData) {
+        return this.makeRequest(`/update/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(todoData),
+        });
+    }
+
+    async deleteTodo(id) {
+        return this.makeRequest(`/delete/${id}`, {
+            method: 'DELETE',
+        });
+    }
+
+    async getTodoStats() {
+        return this.makeRequest('/stats');
+    }
 }
 
-async function registerUser(userData) {
-  try {
-    const response = await fetch('http://localhost:8080/api/register', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData), 
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Registration failed');
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function loginUser(credentials) {
-  try {
-    const response = await fetch('http://localhost:8080/api/login', {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Login failed');
-    }
-
-    return await checkIfStillLoggedIn();
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function logoutUser() {
-  try {
-    const response = await fetch(`${BASE_URL}/logout`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Logout failed');
-    }
-
-    return await response.json(); 
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function getTodos(filters = {}) {
-  try {
-    const queryParams = new URLSearchParams();
-    if (filters.completed !== undefined) {
-      queryParams.append('completed', filters.completed);
-    }
-    if (filters.search) {
-      queryParams.append('searchTerm', filters.search);
-    }
-    const queryString = queryParams.toString();
-    const url = queryString ? `${BASE_URL}/search?${queryString}` : `${BASE_URL}`;
-
-    const response = await fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Failed to fetch todos');
-    }
-
-    const data = await response.json();
-    return data.data;
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function getTodo(id) {
-  try {
-    const response = await fetch(`${BASE_URL}/${id}`, {
-      method: 'GET',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Failed to fetch todo');
-    }
-
-    const data = await response.json();
-    return data.data; 
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function createTodo(todoData) {
-  try {
-    const response = await fetch(`${BASE_URL}/create`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(todoData),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Failed to create todo');
-    }
-
-    const data = await response.json();
-    return data.data; 
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function updateTodo(id, todoData) {
-  try {
-    const response = await fetch(`${BASE_URL}/${id}`, {
-      method: 'PUT',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(todoData),
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Failed to update todo');
-    }
-
-    const data = await response.json();
-    return data.data; 
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function toggleComplete(id, completed) {
-  try {
-    const endpoint = completed ? `${BASE_URL}/${id}/complete` : `${BASE_URL}/${id}/incomplete`;
-    const response = await fetch(endpoint, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Failed to toggle completion');
-    }
-
-    const data = await response.json();
-    return data.data; 
-  } catch (error) {
-    throw error;
-  }
-}
-
-
-async function deleteTodo(id) {
-  try {
-   
-    const response = await fetch(`${BASE_URL}/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const data = await response.json();
-      throw new Error(data.message || 'Failed to delete todo');
-    }
-
-    return await response.json();
-  } catch (error) {
-    throw error;
-  }
-}
-
-
-async function getTodoStats() {
-  try {
-    const todos = await getTodos();
-    const total = todos.length;
-    const completed = todos.filter((todo) => todo.completed).length;
-    const pending = total - completed;
-    const highPriority = todos.filter((todo) => todo.priority === 'HIGH').length;
-    return { total, completed, pending, highPriority };
-  } catch (error) {
-    throw error;
-  }
-}
+// Create a global instance
+const api = new APIService();
