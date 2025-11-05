@@ -54,10 +54,10 @@
         </div>
 
         <div id="empty-state" class="text-center hidden" style="padding: 60px 20px;">
-            <h3 style="color: #666; margin-bottom: 15px;">No todos found</h3>
-            <p style="color: #999; margin-bottom: 25px;">Get started by creating your first todo!</p>
-            <button class="btn btn-primary" onclick="todoManager.showAddTodoModal()">
-                Create Your First Todo
+            <h3 id="empty-title" style="color: #666; margin-bottom: 15px;"></h3>
+            <p id="empty-description" style="color: #999; margin-bottom: 25px;"></p>
+            <button id="empty-action" class="btn btn-primary" onclick="todoManager.showAddTodoModal()">
+                Create Your Todo
             </button>
         </div>
     </div>
