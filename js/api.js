@@ -1,7 +1,7 @@
 // API Service for backend communication
 class APIService {
     constructor() {
-        this.baseURL = 'http://localhost:8080/api';
+        this.baseURL = 'http://127.0.0.1:8080/api';
         this.defaultHeaders = {
             'Content-Type': 'application/json',
         };
@@ -10,12 +10,11 @@ class APIService {
     async makeRequest(url, options = {}) {
       const fullUrl = `${this.baseURL}${url}`;
 
-      // Extended timeout: 60 minutes (3600000 ms)
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3600000);
+      const timeout = setTimeout(() => controller.abort(), 36000);
 
       const config = {
-          credentials: 'include', // Include cookies for session handling
+          credentials: 'include',
           signal: controller.signal,
           ...options,
           headers: {
@@ -24,14 +23,16 @@ class APIService {
           },
       };
 
-      let response;
-      let data;
+    //   let response;
+    //   let data;
 
       try {
-          response = await fetch(fullUrl, config);
-
+          const response = await fetch(fullUrl, config);
+          clearTimeout(timeout);
+          
           const contentType = response.headers.get('content-type');
 
+          let data;
           if (contentType && contentType.includes('application/json')) {
               data = await response.json();
           } else {
@@ -48,7 +49,6 @@ class APIService {
               error.data = data;
               throw error;
           }
-
           return data;
       } catch (error) {
           if (error.name === 'AbortError') {
@@ -61,12 +61,10 @@ class APIService {
 
           throw error;
       } finally {
-          // clearTimeout(timeout);
+          clearTimeout(timeout);
       }
     }
 
-
-    // Authentication API methods
     async register(userData) {
         return this.makeRequest('/register', {
             method: 'POST',
@@ -78,6 +76,8 @@ class APIService {
         return this.makeRequest('/login', {
             method: 'POST',
             body: JSON.stringify(credentials),
+            credentials: 'include'
+
         });
     }
 
@@ -91,7 +91,6 @@ class APIService {
         return this.makeRequest('/me');
     }
 
-    // Todo API methods
     async getTodos(filters = {}) {
         const queryParams = new URLSearchParams();
         
@@ -100,7 +99,7 @@ class APIService {
         }
         
         if (filters.search) {
-            queryParams.append('search', filters.search);
+            queryParams.append('keyword', filters.search); // FIXED here
         }
 
         const queryString = queryParams.toString();
@@ -109,8 +108,9 @@ class APIService {
         return this.makeRequest(url);
     }
 
-    async getTodo(id) {
-        return this.makeRequest(`/${id}`);
+
+    async getTodo(todoId) {
+        return this.makeRequest(`/${todoId}`);
     }
 
     async createTodo(todoData) {
@@ -120,15 +120,15 @@ class APIService {
         });
     }
 
-    async updateTodo(id, todoData) {
-        return this.makeRequest(`/update/${id}`, {
+    async updateTodo(todoId, todoData) {
+        return this.makeRequest(`/update/${todoId}`, {
             method: 'PUT',
             body: JSON.stringify(todoData),
         });
     }
 
-    async deleteTodo(id) {
-        return this.makeRequest(`/delete/${id}`, {
+    async deleteTodo(todoId) {
+        return this.makeRequest(`/delete/${todoId}`, {
             method: 'DELETE',
         });
     }
@@ -138,5 +138,4 @@ class APIService {
     }
 }
 
-// Create a global instance
 const api = new APIService();
