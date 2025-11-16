@@ -22,8 +22,9 @@ class TodoApp {
     setupEventListeners() {
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                authManager.logout();
+            logoutBtn.addEventListener('click', async () => {
+                await authManager.logout();
+                this.showLoginPage();
             });
         }
 
@@ -114,6 +115,10 @@ class TodoApp {
     async initializeDashboard() {
         this.updateNavbar(true);
         
+        const isAuthenticated = await authManager.checkAuth();
+        if (!isAuthenticated) {
+            return this.showLoginPage();
+        }
         await todoManager.loadTodos();
     }
 
@@ -129,9 +134,9 @@ class TodoApp {
             navbar.style.display = show ? 'flex' : 'none';
         }
         
-        if (show && welcomeMessage && authManager.getCurrentUser()) {
+        if (show && welcomeMessage) {
             const user = authManager.getCurrentUser();
-            welcomeMessage.textContent = `Welcome, ${user.fullName || user.username}!`;
+            welcomeMessage.textContent = `Welcome, ${user.username}!`;
         }
     }
 
@@ -188,3 +193,4 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     event.preventDefault();
 });
+
