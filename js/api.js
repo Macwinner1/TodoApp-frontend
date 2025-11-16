@@ -1,4 +1,3 @@
-// API Service for backend communication
 class APIService {
     constructor() {
         this.baseURL = 'http://127.0.0.1:8080/api';
