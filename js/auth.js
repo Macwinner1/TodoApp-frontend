@@ -7,8 +7,9 @@ class AuthManager {
 
     async checkAuth() {
         try {
-            const user = await api.getCurrentUser();
-            this.currentUser = user;
+            const response = await api.getCurrentUser();
+            console.log("to know the user",response) //added to check user 
+            this.currentUser = response.data;
             this.isAuthenticated = true;
             return true;
         } catch (error) {
@@ -21,7 +22,7 @@ class AuthManager {
     async loginUser(credentials) {
         try {
             const response = await api.login(credentials);
-            this.currentUser = response.user;
+            this.currentUser = response.data;
             this.isAuthenticated = true;
             return response;
         } catch (error) {
@@ -120,7 +121,8 @@ async function handleRegister(event) {
         username: formData.get('username'),
         password: formData.get('password'),
         email: formData.get('email'),
-        fullName: formData.get('fullName')
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName')
     };
 
     const confirmPassword = formData.get('confirmPassword');
@@ -204,14 +206,8 @@ function showMessage(message, type = 'info') {
         if (messageEl.parentNode) {
             messageEl.parentNode.removeChild(messageEl);
         }
-    }, 50000);
+    }, 500);
 }
-document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
-});
-
 
 const authManager = new AuthManager();
+
