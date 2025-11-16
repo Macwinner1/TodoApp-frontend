@@ -23,9 +23,6 @@ class APIService {
           },
       };
 
-    //   let response;
-    //   let data;
-
       try {
           const response = await fetch(fullUrl, config);
           clearTimeout(timeout);
@@ -76,7 +73,7 @@ class APIService {
         return this.makeRequest('/login', {
             method: 'POST',
             body: JSON.stringify(credentials),
-            credentials: 'include'
+            // credentials: 'include'
 
         });
     }
@@ -91,16 +88,15 @@ class APIService {
         return this.makeRequest('/me');
     }
 
-    async getTodos(filters = {}) {
+     async getTodos() {
+        return this.makeRequest('/todos');
+    }
+
+    async searchTodos(filters = {}) {
         const queryParams = new URLSearchParams();
         
-        if (filters.completed !== undefined) {
-            queryParams.append('completed', filters.completed);
-        }
-        
-        if (filters.search) {
-            queryParams.append('keyword', filters.search); // FIXED here
-        }
+        if (filters.completed !== undefined) queryParams.append('completed', filters.completed);
+        if (filters.search) queryParams.append('keyword', filters.search);
 
         const queryString = queryParams.toString();
         const url = queryString ? `/search?${queryString}` : '/search';
@@ -130,6 +126,18 @@ class APIService {
     async deleteTodo(todoId) {
         return this.makeRequest(`/delete/${todoId}`, {
             method: 'DELETE',
+        });
+    }
+
+    async markComplete(todoId) {
+        return this.makeRequest(`/${todoId}/complete`, {
+            method: 'PATCH',
+        });
+    }
+
+    async markIncomplete(todoId) {
+        return this.makeRequest(`/${todoId}/incomplete`, {
+            method: 'PATCH',
         });
     }
 
